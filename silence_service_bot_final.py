@@ -51,9 +51,9 @@ logger = logging.getLogger(__name__)
 # ===========================
 import aiosqlite
 
-async def init_db():
+ def init_db():
     async with aiosqlite.connect(DB_NAME) as db:
-        await db.execute("""
+         db.execute("""
             CREATE TABLE IF NOT EXISTS complaints (
                 id TEXT PRIMARY KEY,
                 user_id INTEGER NOT NULL,
@@ -87,19 +87,19 @@ async def get_user_complaints(user_id: int, limit: int = 5):
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-async def get_complaint_by_id(complaint_id: str):
+ def get_complaint_by_id(complaint_id: str):
     async with aiosqlite.connect(DB_NAME) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM complaints WHERE id = ?", (complaint_id,)) as cursor:
             row = await cursor.fetchone()
             return dict(row) if row else None
 
-async def update_complaint_status(complaint_id: str, status: str):
+ def update_complaint_status(complaint_id: str, status: str):
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute("UPDATE complaints SET status = ? WHERE id = ?", (status, complaint_id))
         await db.commit()
 
-async def get_stats():
+ def get_stats():
     async with aiosqlite.connect(DB_NAME) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
@@ -108,8 +108,8 @@ async def get_stats():
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-async def get_all_complaints(limit: int = 10):
-    async with aiosqlite.connect(DB_NAME) as db:
+ def get_all_complaints(limit: int = 10):
+     with aiosqlite.connect(DB_NAME) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
             "SELECT * FROM complaints ORDER BY timestamp DESC LIMIT ?", (limit,)
@@ -228,7 +228,7 @@ STATE_ROOM, STATE_DESCRIPTION, STATE_PHOTO = range(3)
 # HANDLERS
 # ===========================
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = user.id
 
@@ -243,13 +243,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Выбери действие ниже 👇"
     )
 
-    await update.message.reply_text(
+     update.message.reply_text(
         welcome_text,
         reply_markup=main_menu_keyboard(user_id),
         parse_mode="HTML",
     )
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     help_text = (
@@ -277,20 +277,20 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"• Пользователь получает уведомление об изменении"
         )
 
-    await update.message.reply_text(
+     update.message.reply_text(
         help_text,
         reply_markup=main_menu_keyboard(user_id),
         parse_mode="HTML",
     )
 
-async def complain_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def complain_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     if not can_send_complaint(user_id):
         remaining = get_cooldown_remaining(user_id)
         bar = format_cooldown_bar(remaining)
 
-        await update.message.reply_text(
+         update.message.reply_text(
             f"⏳ <b>Подожди ещё немного!</b>\n\n"
             f"{bar}\n\n"
             f"Перед следующей жалобой осталось <b>{remaining} секунд</b>.\n"
@@ -300,10 +300,10 @@ async def complain_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return ConversationHandler.END
 
-    msg = await update.message.reply_text("📝 <b>Новая жалоба</b>\n\nЗагружаю форму...")
-    await asyncio.sleep(0.5)
+    msg =  update.message.reply_text("📝 <b>Новая жалоба</b>\n\nЗагружаю форму...")
+     asyncio.sleep(0.5)
 
-    await msg.edit_text(
+     msg.edit_text(
         "📝 <b>Шаг 1 из 3</b>\n"
         f"━━━━━━━━━━━━━━━\n"
         f"🚪 <b>Укажи номер комнаты или этаж,</b>\n"
@@ -314,11 +314,11 @@ async def complain_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return STATE_ROOM
 
-async def complain_room(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def complain_room(update: Update, context: ContextTypes.DEFAULT_TYPE):
     room = update.message.text.strip()
 
     if room == "❌ Отменить":
-        await update.message.reply_text(
+         update.message.reply_text(
             "❌ <b>Отменено.</b> Возвращаю в меню...",
             reply_markup=main_menu_keyboard(update.effective_user.id),
             parse_mode="HTML",
@@ -326,7 +326,7 @@ async def complain_room(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     if not room or len(room) > 50:
-        await update.message.reply_text(
+         update.message.reply_text(
             "⚠️ Номер комнаты слишком короткий или длинный. Попробуй ещё раз:",
             reply_markup=cancel_keyboard(),
         )
@@ -334,7 +334,7 @@ async def complain_room(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["complaint_room"] = room
 
-    await update.message.reply_text(
+     update.message.reply_text(
         "📝 <b>Шаг 2 из 3</b>\n"
         f"━━━━━━━━━━━━━━━\n"
         f"✅ Комната: <b>{room}</b>\n\n"
@@ -349,7 +349,7 @@ async def complain_description(update: Update, context: ContextTypes.DEFAULT_TYP
     text = update.message.text.strip()
 
     if text == "❌ Отменить":
-        await update.message.reply_text(
+         update.message.reply_text(
             "❌ <b>Отменено.</b> Возвращаю в меню...",
             reply_markup=main_menu_keyboard(update.effective_user.id),
             parse_mode="HTML",
@@ -357,14 +357,14 @@ async def complain_description(update: Update, context: ContextTypes.DEFAULT_TYP
         return ConversationHandler.END
 
     if not text or len(text) < 5:
-        await update.message.reply_text(
+         update.message.reply_text(
             "⚠️ Описание слишком короткое. Расскажи подробнее:",
             reply_markup=cancel_keyboard(),
         )
         return STATE_DESCRIPTION
 
     if len(text) > 500:
-        await update.message.reply_text(
+         update.message.reply_text(
             "⚠️ Описание слишком длинное (макс. 500 символов). Сократи и попробуй снова:",
             reply_markup=cancel_keyboard(),
         )
@@ -373,7 +373,7 @@ async def complain_description(update: Update, context: ContextTypes.DEFAULT_TYP
     context.user_data["complaint_description"] = text
     room = context.user_data["complaint_room"]
 
-    await update.message.reply_text(
+     update.message.reply_text(
         "📝 <b>Шаг 3 из 3</b>\n"
         f"━━━━━━━━━━━━━━━\n"
         f"✅ Комната: <b>{room}</b>\n"
@@ -385,7 +385,7 @@ async def complain_description(update: Update, context: ContextTypes.DEFAULT_TYP
     )
     return STATE_PHOTO
 
-async def complain_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def complain_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     room = context.user_data.get("complaint_room", "")
     description = context.user_data.get("complaint_description", "")
@@ -396,21 +396,21 @@ async def complain_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.message.text and update.message.text.strip() == "📷 Пропустить фото":
         photo_file_id = None
     elif update.message.text and update.message.text.strip() == "❌ Отменить":
-        await update.message.reply_text(
+         update.message.reply_text(
             "❌ <b>Отменено.</b> Возвращаю в меню...",
             reply_markup=main_menu_keyboard(user_id),
             parse_mode="HTML",
         )
         return ConversationHandler.END
     else:
-        await update.message.reply_text(
+         update.message.reply_text(
             "⚠️ Отправь фото или нажми <b>📷 Пропустить фото</b>",
             reply_markup=photo_choice_keyboard(),
             parse_mode="HTML",
         )
         return STATE_PHOTO
 
-    complaint_id = await add_complaint(user_id, room, description, photo_file_id)
+    complaint_id =  add_complaint(user_id, room, description, photo_file_id)
 
     text = format_complaint_message({
         "id": complaint_id,
@@ -424,7 +424,7 @@ async def complain_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for admin_id in ADMIN_IDS:
         try:
             if photo_file_id:
-                msg = await context.bot.send_photo(
+                msg =  context.bot.send_photo(
                     chat_id=admin_id,
                     photo=photo_file_id,
                     caption=text,
@@ -432,7 +432,7 @@ async def complain_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     reply_markup=status_inline_keyboard(complaint_id),
                 )
             else:
-                msg = await context.bot.send_message(
+                msg = context.bot.send_message(
                     chat_id=admin_id,
                     text=text,
                     parse_mode="HTML",
@@ -453,7 +453,7 @@ async def complain_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Спасибо за помощь в поддержании тишины! 🌙"
     )
 
-    await update.message.reply_text(
+     update.message.reply_text(
         confirm_text,
         reply_markup=main_menu_keyboard(user_id),
         parse_mode="HTML",
@@ -462,12 +462,12 @@ async def complain_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     return ConversationHandler.END
 
-async def my_complaints(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def my_complaints(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     complaints = await get_user_complaints(user_id, limit=5)
 
     if not complaints:
-        await update.message.reply_text(
+         update.message.reply_text(
             "📭 <b>У тебя пока нет жалоб</b>\n\n"
             f"Нажми <b>📢 Пожаловаться</b>, чтобы создать первую.",
             reply_markup=main_menu_keyboard(user_id),
@@ -485,17 +485,17 @@ async def my_complaints(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"   📅 {ts}\n"
         )
 
-    await update.message.reply_text(
+     update.message.reply_text(
         "\n".join(lines),
         reply_markup=main_menu_keyboard(user_id),
         parse_mode="HTML",
     )
 
-async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     if user_id not in ADMIN_IDS:
-        await update.message.reply_text(
+         update.message.reply_text(
             "🚫 <b>Доступ запрещён</b>\n\n"
             f"Этот раздел только для администраторов.",
             reply_markup=main_menu_keyboard(user_id),
@@ -503,7 +503,7 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    stats_data = await get_stats()
+    stats_data =  get_stats()
     total_complaints = sum(s["count"] for s in stats_data) if stats_data else 0
 
     panel_text = (
@@ -517,13 +517,13 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Выбери действие ниже 👇"
     )
 
-    await update.message.reply_text(
+     update.message.reply_text(
         panel_text,
         reply_markup=admin_panel_keyboard(),
         parse_mode="HTML",
     )
 
-async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     if user_id not in ADMIN_IDS:
@@ -532,7 +532,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stats_data = await get_stats()
 
     if not stats_data:
-        await update.message.reply_text(
+         update.message.reply_text(
             "📭 <b>Пока нет данных</b>\n\n"
             f"Жалобы ещё не поступали.",
             reply_markup=admin_panel_keyboard(),
@@ -548,22 +548,22 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bar = "█" * min(s["count"], 10)
         lines.append(f"{medal} <b>{s['room']}</b> — {s['count']} {bar}")
 
-    await update.message.reply_text(
+     update.message.reply_text(
         "\n".join(lines),
         reply_markup=admin_panel_keyboard(),
         parse_mode="HTML",
     )
 
-async def all_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def all_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     if user_id not in ADMIN_IDS:
         return
 
-    complaints = await get_all_complaints(limit=10)
+    complaints = get_all_complaints(limit=10)
 
     if not complaints:
-        await update.message.reply_text(
+         update.message.reply_text(
             "📭 <b>Пока нет жалоб</b>",
             reply_markup=admin_panel_keyboard(),
             parse_mode="HTML",
@@ -581,13 +581,13 @@ async def all_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"   📅 {ts}\n"
         )
 
-    await update.message.reply_text(
+     update.message.reply_text(
         "\n".join(lines),
         reply_markup=admin_panel_keyboard(),
         parse_mode="HTML",
     )
 
-async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     await update.message.reply_text(
         "👋 <b>Главное меню</b>\n\n"
@@ -596,23 +596,23 @@ async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML",
     )
 
-async def status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     data = query.data.split("|")
     if len(data) != 3:
-        await query.answer("❌ Ошибка данных", show_alert=True)
+         query.answer("❌ Ошибка данных", show_alert=True)
         return
 
     _, complaint_id, new_status = data
 
-    complaint = await get_complaint_by_id(complaint_id)
+    complaint =  get_complaint_by_id(complaint_id)
     if not complaint:
-        await query.edit_message_text("❌ Жалоба не найдена.")
+         query.edit_message_text("❌ Жалоба не найдена.")
         return
 
-    await update_complaint_status(complaint_id, new_status)
+     update_complaint_status(complaint_id, new_status)
 
     key = f"msg_map_{complaint_id}"
     msg_map = context.bot_data.get(key, [])
@@ -621,7 +621,7 @@ async def status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for admin_chat_id, message_id in msg_map:
         try:
             if complaint.get("photo_file_id"):
-                await context.bot.edit_message_caption(
+                 context.bot.edit_message_caption(
                     chat_id=admin_chat_id,
                     message_id=message_id,
                     caption=text,
@@ -629,7 +629,7 @@ async def status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     reply_markup=status_inline_keyboard(complaint_id),
                 )
             else:
-                await context.bot.edit_message_text(
+                 context.bot.edit_message_text(
                     chat_id=admin_chat_id,
                     message_id=message_id,
                     text=text,
@@ -642,7 +642,7 @@ async def status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = complaint["user_id"]
     try:
         emoji = STATUS_EMOJI.get(new_status, "📌")
-        await context.bot.send_message(
+         context.bot.send_message(
             chat_id=user_id,
             text=(
                 f"📢 <b>Обновление статуса!</b>\n\n"
@@ -654,8 +654,7 @@ async def status_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     except Exception as e:
         logger.warning(f"Could not notify user {user_id}: {e}")
-
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "❌ <b>Отменено.</b> Возвращаю в меню...",
         reply_markup=main_menu_keyboard(update.effective_user.id),
@@ -664,8 +663,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     return ConversationHandler.END
 
-async def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
+def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+     update.message.reply_text(
         "🤔 <b>Не понял команду</b>\n\n"
         f"Используй кнопки меню ниже 👇",
         reply_markup=main_menu_keyboard(update.effective_user.id),
@@ -675,8 +674,8 @@ async def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ===========================
 # MAIN
 # ===========================
-async def main():
-    await init_db()
+def main():
+     init_db()
 
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -708,7 +707,7 @@ async def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, unknown_message))
 
     logger.info("🚀 Bot started successfully!")
-    await application.run_polling()
+    application.run_polling()
 
 if __name__ == "__main__":
     import asyncio
